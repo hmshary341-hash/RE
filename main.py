@@ -25,11 +25,18 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 @bot.event
 async def on_ready():
   print(f'تم تسجيل الدخول: {bot.user}')
+  try:
+    # مزامنة أوامر السلاش تلقائياً عند تشغيل البوت
+    synced = await bot.tree.sync()
+    print(f'تمت مزامنة {len(synced)} أمر/أوامر (Slash Commands).')
+  except Exception as e:
+    print(f'خطأ أثناء مزامنة الأوامر: {e}')
 
 
-@bot.command()
-async def ping(ctx):
-  await ctx.send('Pong! 🏓')
+# تحويل الأمر إلى أمر سلاش (Slash Command)
+@bot.tree.command(name='ping', description='لتحقق من سرعة استجابة البوت')
+async def ping(interaction: discord.Interaction):
+  await interaction.response.send_message('Pong! 🏓')
 
 
 if __name__ == '__main__':
