@@ -37,7 +37,6 @@ def has_allowed_role():
 
 class Moderation(commands.Cog):
 
-  # تجميع الأوامر تحت مجموعة رئيسية واحدة باسم /admin
   admin = app_commands.Group(
       name='admin', description='لوحة الأوامر الإدارية'
   )
@@ -53,19 +52,61 @@ class Moderation(commands.Cog):
     except:
       pass
 
+  # بحث شامل في السيرفر بالكامل عن العضو باليوزر أو الآيدي أو المنشن
+  async def resolve_member(
+      self, interaction: discord.Interaction, query: str
+  ) -> discord.Member | None:
+    clean_q = (
+        query.replace('<@', '').replace('>', '').replace('!', '').strip()
+    )
+
+    # 1. البحث بالآيدي المباشر
+    if clean_q.isdigit():
+      try:
+        return await interaction.guild.fetch_member(int(clean_q))
+      except:
+        pass
+
+    # 2. البحث في كامل أعضاء السيرفر عبر ميزة الاستعلام (Query)
+    try:
+      members = await interaction.guild.query_members(clean_q, limit=5)
+      for m in members:
+        if (
+            clean_q.lower() == m.name.lower()
+            or clean_q.lower() == m.display_name.lower()
+            or clean_q.lower() in m.name.lower()
+        ):
+          return m
+    except:
+      pass
+
+    # 3. البحث الاحتياطي في الذاكرة المحلية
+    for m in interaction.guild.members:
+      if (
+          clean_q.lower() == m.name.lower()
+          or clean_q.lower() == m.display_name.lower()
+      ):
+        return m
+
+    return None
+
   # 1. أمر الحظر (/admin ban)
   @admin.command(name='ban', description='حظر عضو من السيرفر نهائياً')
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد حظره', reason='سبب الحظر'
+      target='يوزر العضو أو آيديه', reason='سبب الحظر'
   )
   async def ban(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     await member.ban(reason=reason)
     try:
       dm_embed = discord.Embed(
@@ -104,15 +145,19 @@ class Moderation(commands.Cog):
   @admin.command(name='kick', description='طرد عضو من السيرفر')
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد طرده', reason='سبب الطرد'
+      target='يوزر العضو أو آيديه', reason='سبب الطرد'
   )
   async def kick(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     await member.kick(reason=reason)
     try:
       dm_embed = discord.Embed(
@@ -151,18 +196,22 @@ class Moderation(commands.Cog):
   @admin.command(name='timeout', description='إسكات عضو لفترة محددة')
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد إسكافه',
+      target='يوزر العضو أو آيديه',
       minutes='المدة بالدقائق',
       reason='سبب الإسكات',
   )
   async def timeout(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       minutes: int,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     duration = timedelta(minutes=minutes)
     await member.timeout(duration, reason=reason)
     try:
@@ -202,20 +251,19 @@ class Moderation(commands.Cog):
     await interaction.followup.send(embed=embed)
 
   # 4. أمر التحذير (/admin warn)
-  @admin.command(
-      name='warn', description='تحذير عضو (له 3 تحذيرات بالدور)'
-  )
+  @admin.command(name='warn', description='تحذير عضو (له 3 تحذيرات بالدور)')
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد تحذيره', reason='سبب التحذير'
+      target='يوزر العضو أو آيديه', reason='سبب التحذير'
   )
   async def warn(
-      self,
-      interaction: discord.Interaction,
-      member: discord.Member,
-      reason: str,
+      self, interaction: discord.Interaction, target: str, reason: str
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     guild = interaction.guild
     r1 = guild.get_role(WARN_1_ID)
     r2 = guild.get_role(WARN_2_ID)
@@ -281,15 +329,19 @@ class Moderation(commands.Cog):
   )
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد إلغاء التحذير عنه', reason='السبب'
+      target='يوزر العضو أو آيديه', reason='السبب'
   )
   async def unwarn(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     guild = interaction.guild
     r1 = guild.get_role(WARN_1_ID)
     r2 = guild.get_role(WARN_2_ID)
@@ -346,21 +398,25 @@ class Moderation(commands.Cog):
     )
     await interaction.followup.send(embed=embed)
 
-  # 6. أمر السجن (/admin jail) - إغلاق جميع الرومات
+  # 6. أمر السجن (/admin jail)
   @admin.command(
       name='jail', description='سجن عضو وإغلاق جميع الرومات في وجهه'
   )
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد سجنه', reason='سبب السجن'
+      target='يوزر العضو أو آيديه', reason='سبب السجن'
   )
   async def jail(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     guild = interaction.guild
     jail_role = guild.get_role(JAIL_ROLE_ID)
     if not jail_role:
@@ -414,21 +470,25 @@ class Moderation(commands.Cog):
           f'حدث خطأ أثناء محاولة سجن العضو: {e}', ephemeral=True
       )
 
-  # 7. أمر الإفراج (/admin unjail) - إعادة فتح الرومات
+  # 7. أمر الإفراج (/admin unjail)
   @admin.command(
       name='unjail', description='الإفراج عن عضو وإعادة فتح الرومات له'
   )
   @has_allowed_role()
   @app_commands.describe(
-      member='العضو المراد الإفراج عنه', reason='السبب'
+      target='يوزر العضو أو آيديه', reason='السبب'
   )
   async def unjail(
       self,
       interaction: discord.Interaction,
-      member: discord.Member,
+      target: str,
       reason: str = 'لم يتم ذكر السبب',
   ):
     await interaction.response.defer()
+    member = await self.resolve_member(interaction, target)
+    if not member:
+      return await interaction.followup.send('العضو ليس موجود', ephemeral=True)
+
     guild = interaction.guild
     jail_role = guild.get_role(JAIL_ROLE_ID)
     if not jail_role:
@@ -482,7 +542,6 @@ class Moderation(commands.Cog):
           f'حدث خطأ أثناء محاولة الإفراج عن العضو: {e}', ephemeral=True
       )
 
-  # معالجة الأخطاء (بدون أي decorator خاطئ)
   async def cog_app_command_error(
       self, interaction: discord.Interaction, error: app_commands.AppCommandError
   ):
