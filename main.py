@@ -1,9 +1,9 @@
-import os
 import asyncio
+import os
 import threading
-from flask import Flask
-import discord
 from discord.ext import commands
+import discord
+from flask import Flask
 
 app = Flask('')
 
@@ -19,6 +19,7 @@ def run_flask():
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True  # مهم جداً لتفاعل أوامر البوص مع رتب الأعضاء
 
 bot = commands.Bot(command_prefix='/', intents=intents)
 
@@ -34,10 +35,10 @@ async def on_ready():
 
 
 async def load_cogs():
-  for filename in os.listdir('./cogs'):
+  for filename in os.listdir('./commands'):
     if filename.endswith('.py'):
       cog_name = filename[:-3]
-      await bot.load_extension(f'cogs.{cog_name}')
+      await bot.load_extension(f'commands.{cog_name}')
       print(f'تم تحميل الملف الفرعي: {cog_name}')
 
 
