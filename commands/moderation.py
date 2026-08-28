@@ -482,8 +482,7 @@ class Moderation(commands.Cog):
           f'حدث خطأ أثناء محاولة الإفراج عن العضو: {e}', ephemeral=True
       )
 
-  # معالجة الأخطاء
-  @app_commands.command_error
+  # معالجة الأخطاء (بدون أي decorator خاطئ)
   async def cog_app_command_error(
       self, interaction: discord.Interaction, error: app_commands.AppCommandError
   ):
