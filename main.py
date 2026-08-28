@@ -1,4 +1,5 @@
 import os
+import asyncio
 import threading
 from flask import Flask
 import discord
@@ -26,20 +27,26 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 async def on_ready():
   print(f'تم تسجيل الدخول: {bot.user}')
   try:
-    # مزامنة أوامر السلاش تلقائياً عند تشغيل البوت
     synced = await bot.tree.sync()
-    print(f'تمت مزامنة {len(synced)} أمر/أوامر (Slash Commands).')
+    print(f'تمت مزامنة {len(synced)} أمر/أوامر.')
   except Exception as e:
     print(f'خطأ أثناء مزامنة الأوامر: {e}')
 
 
-# تحويل الأمر إلى أمر سلاش (Slash Command)
-@bot.tree.command(name='ping', description='لتحقق من سرعة استجابة البوت')
-async def ping(interaction: discord.Interaction):
-  await interaction.response.send_message('Pong! 🏓')
+async def load_cogs():
+  for filename in os.listdir('./cogs'):
+    if filename.endswith('.py'):
+      cog_name = filename[:-3]
+      await bot.load_extension(f'cogs.{cog_name}')
+      print(f'تم تحميل الملف الفرعي: {cog_name}')
+
+
+async def main():
+  async with bot:
+    threading.Thread(target=run_flask).start()
+    await load_cogs()
+    await bot.start(os.environ['DISCORD_TOKEN'])
 
 
 if __name__ == '__main__':
-  threading.Thread(target=run_flask).start()
-  # التوكن سيسحبه تلقائياً من إعدادات المنصة (Environment Variables)
-  bot.run(os.environ['DISCORD_TOKEN'])
+  asyncio.run(main())
