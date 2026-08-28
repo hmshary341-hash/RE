@@ -65,6 +65,7 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     await member.ban(reason=reason)
     try:
       dm_embed = discord.Embed(
@@ -97,7 +98,7 @@ class Moderation(commands.Cog):
         ),
         color=discord.Color.red(),
     )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
   # 2. أمر الطرد (/admin kick)
   @admin.command(name='kick', description='طرد عضو من السيرفر')
@@ -111,6 +112,7 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     await member.kick(reason=reason)
     try:
       dm_embed = discord.Embed(
@@ -143,7 +145,7 @@ class Moderation(commands.Cog):
         ),
         color=discord.Color.orange(),
     )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
   # 3. أمر الإسكات المؤقت (/admin timeout)
   @admin.command(name='timeout', description='إسكات عضو لفترة محددة')
@@ -160,6 +162,7 @@ class Moderation(commands.Cog):
       minutes: int,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     duration = timedelta(minutes=minutes)
     await member.timeout(duration, reason=reason)
     try:
@@ -196,7 +199,7 @@ class Moderation(commands.Cog):
         ),
         color=discord.Color.gold(),
     )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
   # 4. أمر التحذير (/admin warn)
   @admin.command(
@@ -212,13 +215,14 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str,
   ):
+    await interaction.response.defer()
     guild = interaction.guild
     r1 = guild.get_role(WARN_1_ID)
     r2 = guild.get_role(WARN_2_ID)
     r3 = guild.get_role(WARN_3_ID)
 
     if not r1 or not r2 or not r3:
-      return await interaction.response.send_message(
+      return await interaction.followup.send(
           'رتب التحذيرات غير موجودة في السيرفر، تأكد من الآديات!', ephemeral=True
       )
 
@@ -269,7 +273,7 @@ class Moderation(commands.Cog):
         ),
         color=discord.Color.yellow(),
     )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
   # 5. أمر إلغاء التحذير (/admin unwarn) بالدور
   @admin.command(
@@ -285,6 +289,7 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     guild = interaction.guild
     r1 = guild.get_role(WARN_1_ID)
     r2 = guild.get_role(WARN_2_ID)
@@ -301,7 +306,7 @@ class Moderation(commands.Cog):
       await member.remove_roles(r1, reason=reason)
       removed_warn = 'الأول (1)'
     else:
-      return await interaction.response.send_message(
+      return await interaction.followup.send(
           'هذا العضو ليس لديه أي تحذيرات لإلغائها!', ephemeral=True
       )
 
@@ -339,7 +344,7 @@ class Moderation(commands.Cog):
         ),
         color=discord.Color.green(),
     )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
   # 6. أمر السجن (/admin jail) - إغلاق جميع الرومات
   @admin.command(
@@ -355,10 +360,11 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     guild = interaction.guild
     jail_role = guild.get_role(JAIL_ROLE_ID)
     if not jail_role:
-      return await interaction.response.send_message(
+      return await interaction.followup.send(
           'رتبة السجن غير موجودة في السيرفر (تأكد من الـ ID)!', ephemeral=True
       )
 
@@ -402,9 +408,9 @@ class Moderation(commands.Cog):
           ),
           color=discord.Color.dark_gray(),
       )
-      await interaction.response.send_message(embed=embed)
+      await interaction.followup.send(embed=embed)
     except Exception as e:
-      await interaction.response.send_message(
+      await interaction.followup.send(
           f'حدث خطأ أثناء محاولة سجن العضو: {e}', ephemeral=True
       )
 
@@ -422,10 +428,11 @@ class Moderation(commands.Cog):
       member: discord.Member,
       reason: str = 'لم يتم ذكر السبب',
   ):
+    await interaction.response.defer()
     guild = interaction.guild
     jail_role = guild.get_role(JAIL_ROLE_ID)
     if not jail_role:
-      return await interaction.response.send_message(
+      return await interaction.followup.send(
           'رتبة السجن غير موجودة في السيرفر (تأكد من الـ ID)!', ephemeral=True
       )
 
@@ -469,9 +476,9 @@ class Moderation(commands.Cog):
           ),
           color=discord.Color.green(),
       )
-      await interaction.response.send_message(embed=embed)
+      await interaction.followup.send(embed=embed)
     except Exception as e:
-      await interaction.response.send_message(
+      await interaction.followup.send(
           f'حدث خطأ أثناء محاولة الإفراج عن العضو: {e}', ephemeral=True
       )
 
