@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import command
 
 class General(commands.Cog):
     def __init__(self, bot):
