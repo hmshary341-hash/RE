@@ -25,6 +25,7 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 async def on_ready():
     print(f'تم تسجيل الدخول: {bot.user}')
     try:
+        
         synced = await bot.tree.sync()
         print(f'تمت مزامنة {len(synced)} أمر/أوامر.')
     except Exception as e:
